@@ -349,13 +349,11 @@ ${content}`,
           const articleList = articles
             .map(
               (article) =>
-                `- ID: ${article.id}, Title: ${article.title || 'N/A'}, Keywords: ${article.keywords || 'N/A'}`,
+                `- ID: ${article.id}, Title: ${article.title || 'N/A'}, Keywords: ${article.keywords || 'N/A'}`
             )
             .join('\n')
           return {
-            content: [
-              { type: 'text', text: `Articles on page ${page}:\n${articleList}` },
-            ],
+            content: [{ type: 'text', text: `Articles on page ${page}:\n${articleList}` }],
           }
         } catch (error) {
           return {
@@ -514,7 +512,7 @@ ${content}`,
     this.db.close()
 
     if (this.config.transport === 'stdio') {
-      (this.transport as StdioServerTransport).close()
+      ;(this.transport as StdioServerTransport).close()
     } else {
       // Close all HTTP transports
       Object.values(this.transports).forEach((t) => t.close())
