@@ -35,10 +35,11 @@ The architecture is composed of several core modules that work together to provi
 *   **Libraries:** Node.js `fs/promises`, `uuid`
 *   **Responsibility:**
     *   Handles all direct interactions with the filesystem.
-    *   `createArticle(content)`: Generates a v4 UUID for the ID, saves the content to `<articlesPath>/<id>.md`, and returns the `id` and `filePath`.
+    *   `createArticle(content)`: Generates a v4 UUID for the ID, saves the content to `<articlesPath>/<id>.md`, tracks creation time, and returns the `id` and `filePath`.
     *   `readArticle(filePath)`: Reads and returns the content of a given file.
-    *   `updateArticle(filePath, newContent)`: Writes new content to an existing file.
+    *   `updateArticle(filePath, newContent)`: Writes new content to an existing file and updates the modification time.
     *   `deleteArticle(filePath)`: Deletes a file.
+    *   `getFileStats(filePath)`: Returns file creation and modification times using `fs.statSync`.
 
 ### 2.4. Database Service (`src/db/database.ts`)
 
@@ -46,12 +47,14 @@ The architecture is composed of several core modules that work together to provi
 *   **Responsibility:**
     *   Manages all database interactions.
     *   **Schema:**
-        *   `articles`: `id TEXT PRIMARY KEY, filePath TEXT NOT NULL, title TEXT, keywords TEXT`
-        *   `articles_fts`: `CREATE VIRTUAL TABLE articles_fts USING fts5(id UNINDEXED, content, tokenize = 'porter');` (Note: `id` is `UNINDEXED` because we will join on the main `articles` table).
+        *   `articles`: `id TEXT PRIMARY KEY, filePath TEXT NOT NULL, title TEXT, keywords TEXT, created_at INTEGER NOT NULL, modified_at INTEGER NOT NULL`
+        *   `articles_fts`: `CREATE VIRTUAL TABLE articles_fts USING fts5(id UNINDEXED, content, title, tokenize = 'porter unicode61');`
     *   `init()`: Connects to the database and runs `CREATE TABLE IF NOT EXISTS...` for both tables to ensure the schema is ready.
-    *   `indexArticle(article)`: Inserts/updates records. It will use `remove-markdown` to get clean text for the `ftsContent` field. It will also extract the first H1 heading for the `title`.
-    *   `deindexArticle(id)`: Removes an article from the index.
-    *   `search(query)`: Executes an FTS query against the `articles_fts` table.
+    *   `indexArticle(article)`: Inserts/updates records with timestamps. Uses `remove-markdown` for clean text and extracts the first H1 heading for the title.
+    *   `deindexArticle(id)`: Removes an article from both tables.
+    *   `search(query, timeRange?, timeField?)`: Executes an FTS query with optional time filters. Limited to 10 results, ordered by relevance score.
+    *   `getByTimeRange(startTime?, endTime?, type)`: Retrieves articles within a specified time range.
+    *   `getStats(timeRange?)`: Returns article statistics including creation/modification counts and keyword frequencies.
 
 ### 2.5. MCP Server (`src/server.ts`)
 
@@ -61,21 +64,25 @@ The architecture is composed of several core modules that work together to provi
     *   Defines the toolset available to the LLM.
     *   Each tool implementation will coordinate calls between the `FileManager` and `DatabaseService`.
 
-## 3. Data Flow & Transactionality
+## 3. Data Flow & Error Handling
 
-To ensure data consistency, tool implementations will follow a specific order of operations with error handling.
+Since this is a single-user local system, we focus on clear error reporting rather than complex transaction management.
 
-**Example: `addArticle` Flow**
+**Example: `createArticle` Flow**
 
-1.  The `addArticle` tool is invoked.
-2.  Call `FileManager.createArticle(content)`. This writes the `.md` file.
-3.  **If successful:** Proceed to step 4.
-4.  **If it fails:** The operation fails, and an error is returned to the LLM. The system is in a clean state.
-5.  Call `DatabaseService.indexArticle(...)` with the new file's data.
-6.  **If successful:** The operation is complete. Return the `id` and `filePath`.
-7.  **If it fails:** The system is in an inconsistent state (orphaned file). The `addArticle` tool's `catch` block will immediately call `FileManager.deleteArticle(filePath)` to roll back the file creation. Then, an error is returned to the LLM.
+1.  The `createArticle` tool is invoked.
+2.  Call `FileManager.createArticle(content)`. This:
+    - Generates a UUID
+    - Creates the `.md` file
+    - Records creation timestamp
+3.  If file creation fails, return error to MCP with clear message.
+4.  Call `DatabaseService.indexArticle(...)` with file data and timestamps.
+5.  If indexing fails:
+    - Delete the created file
+    - Return error to MCP with clear message
+6.  On success, return `id` and `filePath`.
 
-This same `try/catch` rollback logic will be applied to `updateArticle` and `deleteArticle` to handle potential inconsistencies.
+Similar error handling applies to `updateArticle` and `deleteArticle`. All errors are propagated to the MCP layer with clear messages for the LLM to explain to users.
 
 ## 4. Project Setup & Dependencies
 

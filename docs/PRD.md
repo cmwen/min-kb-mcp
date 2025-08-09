@@ -60,19 +60,23 @@ The primary goal is to create a simple, robust, and well-documented tool that al
 *   `filePath` (TEXT): The absolute path to the corresponding `.md` file.
 *   `title` (TEXT): The title of the article (e.g., the first H1 heading).
 *   `keywords` (TEXT): A comma-separated list of strings for tagging and linking.
-*   `ftsContent` (TEXT): The full content of the markdown file, stored for indexing.
-*   An FTS5 virtual table will be created on `ftsContent` to enable fast searching.
+*   `created_at` (INTEGER): Unix timestamp of when the article was created.
+*   `modified_at` (INTEGER): Unix timestamp of when the article was last modified.
+*   An FTS5 virtual table will be created for full-text search on content and title.
 
 ## 5. MCP Tool Definitions (The API)
 
 The MCP server will register and expose the following tools:
 
-*   `addArticle(content: string, keywords: string[])`: Creates a new article. Saves the content to a new `.md` file and indexes it in the database. Returns the new article's `id` and `filePath`.
+*   `createArticle(content: string, keywords?: string[])`: Creates a new article. Saves the content to a new `.md` file and indexes it in the database. Returns the new article's `id` and `filePath`.
 *   `getArticle(id: string)`: Retrieves the full content of an article by reading its `.md` file.
-*   `updateArticle(id: string, newContent: string)`: Updates the content of an existing `.md` file and re-indexes it in the database.
+*   `updateArticle(id: string, content: string, keywords?: string[])`: Updates the content of an existing `.md` file and re-indexes it in the database.
 *   `deleteArticle(id: string)`: Deletes an article's `.md` file and removes its entry from the database index.
-*   `searchArticles(query: string)`: Performs a full-text search on the database index and returns a list of matching article IDs and snippets.
+*   `searchArticles(query: string, timeRange?: {start?: string, end?: string}, timeField?: "created"|"modified")`: Performs a full-text search with optional time filters. Returns up to 10 matching articles with relevance scores.
 *   `findLinkedArticles(id: string)`: Finds and returns a list of articles that share one or more keywords with the specified article.
+*   `getArticlesByTimeRange(startTime?: string, endTime?: string, type: "created"|"modified")`: Retrieves articles within a specific time range based on creation or modification time.
+*   `listArticles()`: Lists all articles in the knowledge base with their basic metadata.
+*   `getArticleStats(timeRange?: {start?: string, end?: string})`: Returns statistics about articles including creation/modification counts and keyword frequencies.
 
 ## 6. Future Enhancements (Post-MVP)
 
