@@ -75,16 +75,25 @@ This phase connects the core services and exposes them to the user and the LLM.
     3.  In the command's action handler, create a `Config` instance and pass it to a (not-yet-created) server instance.
 *   **Expected Outcome:** Running `tsx src/cli.ts start --kb my-test` executes without errors and correctly initializes the `Config` object.
 
-### ☐ Task 7: Implement the MCP Server & Tools
+### ☐ Task 7: Implement the MCP Server with SDK Integration
 
-*   **Why:** This is the core of the application, exposing our backend services to the LLM as a set of tools.
+*   **Why:** This is the core of the application, properly implementing the MCP protocol using the official SDK.
 *   **What:**
-    1.  Create the file `src/server.ts`.
-    2.  Implement the `MCPServer` class.
-    3.  The constructor should accept the `Config` object and initialize the `FileManager` and `DatabaseService`.
-    4.  Use `@mcp/sdk` to define and register the tools (`addArticle`, `searchArticles`, etc.) as specified in the PRD and tech design.
-    5.  Implement the rollback logic described in the tech design for data consistency.
-*   **Expected Outcome:** A running MCP server that correctly exposes the defined tools. Invoking a tool (e.g., `addArticle`) correctly calls the file and database services and performs the complete operation.
+    1.  Install the SDK: `npm install @modelcontextprotocol/sdk zod`.
+    2.  Create the file `src/server.ts`.
+    3.  Implement the MCP server using `McpServer` from the SDK:
+        - Configure the server with proper name and version
+        - Set up the StdioServerTransport for CLI usage
+        - Use Zod for input validation schemas
+    4.  Register tools using `registerTool`:
+        - Implement `addArticle`, `searchArticles`, etc. as specified
+        - Follow the SDK's response format for tool results
+        - Implement proper error handling with `isError` flag
+    5.  Register resources using `registerResource`:
+        - Create article resource template for accessing content
+        - Implement proper mime types and URI handling
+    6.  Implement proper error handling and rollback mechanisms as shown in the tech design.
+*   **Expected Outcome:** A fully compliant MCP server that exposes tools and resources according to the protocol specification, with proper validation, error handling, and data consistency.
 
 ---
 

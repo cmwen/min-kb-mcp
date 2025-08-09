@@ -55,27 +55,116 @@ The architecture is composed of several core modules that work together to provi
 
 ### 2.5. MCP Server (`src/server.ts`)
 
-*   **Library:** `@mcp/sdk`
+*   **Library:** `@modelcontextprotocol/sdk`
 *   **Responsibility:**
-    *   Initializes the MCP server.
-    *   Defines the toolset available to the LLM.
+    *   Initializes the MCP server using the SDK's `McpServer` class.
+    *   Defines and registers tools, resources, and prompts available to the LLM.
     *   Each tool implementation will coordinate calls between the `FileManager` and `DatabaseService`.
+    *   Implements proper error handling and response formatting according to the MCP protocol.
+    *   Uses the SDK's validation capabilities with Zod schemas for tool inputs.
+    *   Handles session management and transport configuration (stdio for CLI usage).
 
-## 3. Data Flow & Transactionality
+## 3. MCP Implementation Details
 
-To ensure data consistency, tool implementations will follow a specific order of operations with error handling.
+### 3.1. Server Configuration
 
-**Example: `addArticle` Flow**
+The MCP server will be configured using the SDK's `McpServer` class:
 
-1.  The `addArticle` tool is invoked.
-2.  Call `FileManager.createArticle(content)`. This writes the `.md` file.
-3.  **If successful:** Proceed to step 4.
-4.  **If it fails:** The operation fails, and an error is returned to the LLM. The system is in a clean state.
-5.  Call `DatabaseService.indexArticle(...)` with the new file's data.
-6.  **If successful:** The operation is complete. Return the `id` and `filePath`.
-7.  **If it fails:** The system is in an inconsistent state (orphaned file). The `addArticle` tool's `catch` block will immediately call `FileManager.deleteArticle(filePath)` to roll back the file creation. Then, an error is returned to the LLM.
+```typescript
+const server = new McpServer({
+  name: "personal-kb",
+  version: "1.0.0"
+});
+```
 
-This same `try/catch` rollback logic will be applied to `updateArticle` and `deleteArticle` to handle potential inconsistencies.
+### 3.2. Tool Definitions
+
+Tools will be registered using the SDK's `registerTool` method and Zod for input validation:
+
+```typescript
+server.registerTool(
+  "addArticle",
+  {
+    title: "Add Article",
+    description: "Add a new article to the knowledge base",
+    inputSchema: {
+      content: z.string().describe("The markdown content of the article"),
+      title: z.string().optional().describe("Optional title for the article")
+    }
+  },
+  async ({ content, title }) => {
+    try {
+      const { id, filePath } = await fileManager.createArticle(content);
+      await dbService.indexArticle({ id, filePath, content, title });
+      return {
+        content: [{
+          type: "text",
+          text: `Article created successfully with ID: ${id}`
+        }]
+      };
+    } catch (error) {
+      // Proper error handling with rollback
+      await fileManager.deleteArticle(filePath);
+      return {
+        content: [{
+          type: "text",
+          text: `Error creating article: ${error.message}`
+        }],
+        isError: true
+      };
+    }
+  }
+);
+```
+
+### 3.3. Resource Definitions
+
+The server will expose articles as resources using dynamic templates:
+
+```typescript
+server.registerResource(
+  "article",
+  new ResourceTemplate("article://{id}", { list: undefined }),
+  {
+    title: "Article Resource",
+    description: "Access to individual articles in the knowledge base"
+  },
+  async (uri, { id }) => {
+    try {
+      const article = await fileManager.readArticle(id);
+      return {
+        contents: [{
+          uri: uri.href,
+          text: article.content,
+          mimeType: "text/markdown"
+        }]
+      };
+    } catch (error) {
+      throw new Error(`Article not found: ${error.message}`);
+    }
+  }
+);
+```
+
+### 3.4. Transport Configuration
+
+For CLI usage, the server will use the SDK's stdio transport:
+
+```typescript
+const transport = new StdioServerTransport();
+await server.connect(transport);
+```
+
+### 3.5. Data Flow & Transactionality
+
+To ensure data consistency, tool implementations follow the SDK's response format and error handling patterns:
+
+1. Input validation using Zod schemas
+2. Coordinated operations between FileManager and DatabaseService
+3. Proper response formatting using the SDK's types
+4. Error handling with rollback mechanisms where needed
+
+Each tool will follow this pattern to maintain data consistency and provide clear feedback to the LLM.
 
 ## 5. Development Best Practices & Conventions
 

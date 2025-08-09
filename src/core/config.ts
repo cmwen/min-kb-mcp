@@ -10,6 +10,8 @@ export class Config {
   private readonly kbRootPath: string
   public readonly dbPath: string
   public readonly articlesPath: string
+  public readonly transport: 'stdio' | 'http' = 'stdio'
+  public readonly httpPort: number = 3000
 
   /**
    * Creates a new Config instance for the specified knowledge base
@@ -19,9 +21,15 @@ export class Config {
     if (!kbName) {
       throw new Error('Knowledge base name is required')
     }
+    
+    // Set transport based on environment variable
+    if (process.env.MCP_TRANSPORT === 'http') {
+      this.transport = 'http'
+      this.httpPort = parseInt(process.env.MCP_PORT || '3000', 10)
+    }
 
     // Resolve the root path for this knowledge base
-    this.kbRootPath = join(getAppdataPath('personal-kb-mcp'), kbName)
+    this.kbRootPath = join(getAppdataPath('min-kb-mcp'), kbName)
     
     // Derive other paths
     this.dbPath = join(this.kbRootPath, `${kbName}.sqlite`)

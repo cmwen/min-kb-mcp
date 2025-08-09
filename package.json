@@ -1,10 +1,13 @@
 {
-  "name": "min-kb-mcp",
+  "name": "@cmwen/min-kb-mcp",
   "version": "0.1.0",
   "description": "A minimalist, file-based knowledge base server (MCP) for LLMs.",
   "main": "dist/index.js",
   "bin": {
     "min-kb-mcp": "./dist/cli.js"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "files": [
     "dist",
@@ -13,7 +16,8 @@
     "LLM.txt"
   ],
   "scripts": {
-    "start": "tsx src/cli.ts",
+    "start": "ts-node src/cli.ts",
+    "dev": "cross-env DEBUG=* MCP_TRANSPORT=http MCP_PORT=9876 tsx --trace-warnings src/cli.ts start --kb dev-kb",
     "build": "tsc",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
@@ -32,30 +36,37 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cmwen/personal-kb-mcp.git"
+    "url": "git@github.com:cmwen/min-kb-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/cmwen/personal-kb-mcp/issues"
+    "url": "https://github.com/cmwen/min-kb-mcp/issues"
   },
-  "homepage": "https://github.com/cmwen/personal-kb-mcp#readme",
+  "homepage": "https://github.com/cmwen/min-kb-mcp#readme",
   "author": "Chi-Ming Wen",
   "license": "MIT",
   "dependencies": {
-    "@mcp/sdk": "^0.10.0",
+    "@modelcontextprotocol/sdk": "^1.17.2",
     "appdata-path": "^1.0.0",
     "better-sqlite3": "^11.1.2",
     "commander": "^12.1.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "remove-markdown": "^0.5.0",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
     "@types/node": "^20.14.10",
-    "@types/remove-markdown": "^0.1.4",
+    "@types/remove-markdown": "^0.1.1",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "cross-env": "^10.0.0",
     "eslint": "^8.57.0",
     "prettier": "^3.3.2",
+    "ts-node": "^10.9.2",
     "tsx": "^4.16.2",
     "typescript": "^5.5.3"
   }

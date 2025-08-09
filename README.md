@@ -17,21 +17,31 @@ A minimalist, file-based knowledge base server designed to be operated programma
 
 ## Installation
 
+First, authenticate with GitHub Packages:
+
 ```bash
-npm install min-kb-mcp
+# Create or edit ~/.npmrc
+echo "@cmwen:registry=https://npm.pkg.github.com" >> ~/.npmrc
+# You'll need a GitHub personal access token with `read:packages` scope
+```
+
+Then install the package:
+
+```bash
+npm install @cmwen/min-kb-mcp
 ```
 
 Or run directly with:
 
 ```bash
-npx min-kb-mcp
+npx @cmwen/min-kb-mcp
 ```
 
 ## Quick Start
 
 1. Start the MCP server for a new knowledge base:
    ```bash
-   npx personal-kb-mcp start --kb my-notes
+   npx min-kb-mcp start --kb my-notes
    ```
 
 2. The server will create:
@@ -43,9 +53,9 @@ npx min-kb-mcp
 
 Files are stored in your system's standard application support directory:
 
-- macOS: `~/Library/Application Support/personal-kb-mcp/<kb-name>/`
-- Linux: `~/.local/share/personal-kb-mcp/<kb-name>/`
-- Windows: `%APPDATA%\\personal-kb-mcp\\<kb-name>\\`
+- macOS: `~/Library/Application Support/min-kb-mcp/<kb-name>/`
+- Linux: `~/.local/share/min-kb-mcp/<kb-name>/`
+- Windows: `%APPDATA%\\min-kb-mcp\\<kb-name>\\`
 
 Each knowledge base contains:
 - `<kb-name>.sqlite`: The SQLite database file
@@ -76,8 +86,8 @@ The following tools are available to LLMs through the MCP server:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/personal-kb-mcp.git
-   cd personal-kb-mcp
+   git clone git@github.com:cmwen/min-kb-mcp.git
+   cd min-kb-mcp
    ```
 
 2. Install dependencies:
@@ -92,10 +102,64 @@ The following tools are available to LLMs through the MCP server:
 
 ### Scripts
 
-- `npm start`: Start the MCP server
+- `npm start`: Start the MCP server in standard stdio mode
+- `npm run dev`: Start the development server with HTTP transport on port 9876
 - `npm run build`: Build the TypeScript code
 - `npm run lint`: Run ESLint
 - `npm run format`: Format code with Prettier
+
+### Development Server
+
+The project supports two transport modes:
+
+1. **Standard Mode (stdio)**: 
+   ```bash
+   npm start -- --kb my-kb
+   ```
+   This is the default mode, suitable for production use with LLM integrations.
+
+2. **Development Mode (HTTP)**:
+   ```bash
+   npm run dev
+   ```
+   This starts a development server that:
+   - Uses HTTP transport instead of stdio
+   - Runs on port 9876
+   - Creates a 'dev-kb' knowledge base
+   - Enables CORS for browser clients
+   - Supports multiple concurrent connections
+   - Provides better debugging capabilities
+
+You can also customize the transport mode and port using environment variables:
+```bash
+MCP_TRANSPORT=http MCP_PORT=3000 npm start -- --kb my-kb
+```
+
+### Using MCP Inspector
+
+When running in development mode, you can use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) to interact with your server:
+
+1. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+2. Open MCP Inspector and connect to:
+   ```
+   http://localhost:9876/mcp
+   ```
+
+The inspector allows you to:
+- Browse available tools and resources
+- Execute tools with different parameters
+- View server responses and error messages
+- Test server functionality interactively
+
+This is particularly useful for:
+- Development and debugging
+- Testing new features
+- Understanding tool behavior
+- Verifying error handling
 
 ## Contributing
 
