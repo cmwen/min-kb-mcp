@@ -1,0 +1,120 @@
+# Instructions for LLMs Working with Personal Knowledge Base MCP
+
+This document provides guidance for Large Language Models interacting with the Personal Knowledge Base MCP server.
+
+## Available Tools
+
+1. createArticle(content: string, keywords?: string[])
+   - Purpose: Create a new article
+   - Returns: { id: string, filePath: string }
+   - Example usage: Create articles with structured content and relevant keywords
+
+2. getArticle(id: string)
+   - Purpose: Retrieve article content
+   - Returns: { content: string, filePath: string }
+   - Use when: Need to read or reference existing articles
+
+3. updateArticle(id: string, content: string, keywords?: string[])
+   - Purpose: Modify existing articles
+   - Returns: { success: boolean }
+   - Best practice: Preserve existing structure while updating content
+
+4. deleteArticle(id: string)
+   - Purpose: Remove articles
+   - Returns: { success: boolean }
+   - Use carefully: Operation cannot be undone
+
+5. searchArticles(query: string, timeRange?: {start?: string, end?: string}, timeField?: "created"|"modified")
+   - Purpose: Full-text search across articles
+   - Returns: Array of matching articles with relevance scores
+   - Best practice: Use specific search terms for better results
+
+6. findLinkedArticles(id: string)
+   - Purpose: Find articles sharing keywords
+   - Returns: Array of related articles
+   - Use for: Discovering content connections
+
+7. getArticlesByTimeRange(startTime?: string, endTime?: string, type: "created"|"modified")
+   - Purpose: Time-based article retrieval
+   - Returns: Array of articles within the time range
+   - Time format: ISO 8601
+
+8. listArticles()
+   - Purpose: Get overview of all articles
+   - Returns: Array of article metadata
+   - Use for: Understanding knowledge base structure
+
+9. getArticleStats(timeRange?: {start?: string, end?: string})
+   - Purpose: Analyze knowledge base metrics
+   - Returns: Statistics about articles and keywords
+   - Use for: Understanding content patterns
+
+## Best Practices
+
+1. Content Structure
+   - Use Markdown formatting
+   - Include a clear H1 title
+   - Organize content with appropriate headings
+   - Use lists and code blocks when relevant
+
+2. Keywords
+   - Choose specific, relevant keywords
+   - Use consistent terminology
+   - Avoid overly generic terms
+   - Consider related concepts
+
+3. Search Optimization
+   - Use specific search terms
+   - Consider temporal context when relevant
+   - Combine with keyword search for better results
+
+4. Error Handling
+   - Check return values for success
+   - Handle missing articles gracefully
+   - Provide clear error messages to users
+
+## Content Guidelines
+
+1. Article Format
+   ```markdown
+   # Title
+   
+   ## Overview
+   Brief introduction
+   
+   ## Main Content
+   Detailed information
+   
+   ## Keywords
+   - keyword1
+   - keyword2
+   ```
+
+2. Metadata Handling
+   - Preserve existing metadata when updating
+   - Update keywords when content focus changes
+   - Maintain consistent formatting
+
+3. Cross-Referencing
+   - Use keywords for implicit linking
+   - Consider content relationships
+   - Maintain bidirectional references when appropriate
+
+## System Interaction
+
+1. Initialization
+   - Server must be running
+   - Knowledge base must be specified
+   - Tools are available after connection
+
+2. Performance Considerations
+   - Batch related operations
+   - Use search before retrieving full content
+   - Consider pagination for large result sets
+
+3. Data Consistency
+   - Verify operations complete successfully
+   - Handle concurrent modifications
+   - Maintain content structure
+
+Remember: You are working with a file-based system where Markdown files are the source of truth. Always ensure content is properly formatted and structured for long-term maintainability.

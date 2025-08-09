@@ -1,26 +1,44 @@
 {
-  "name": "personal-kb-mcp",
+  "name": "min-kb-mcp",
   "version": "0.1.0",
-  "description": "A simple, file-based knowledge base server (MCP) for LLMs.",
+  "description": "A minimalist, file-based knowledge base server (MCP) for LLMs.",
   "main": "dist/index.js",
   "bin": {
-    "personal-kb-mcp": "./dist/cli.js"
+    "min-kb-mcp": "./dist/cli.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "LLM.txt"
+  ],
   "scripts": {
     "start": "tsx src/cli.ts",
     "build": "tsc",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write .",
-    "test": "echo "Error: no test specified" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "llm",
     "mcp",
     "knowledge-base",
     "sqlite",
-    "typescript"
+    "typescript",
+    "markdown",
+    "ai",
+    "notes"
   ],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cmwen/personal-kb-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cmwen/personal-kb-mcp/issues"
+  },
+  "homepage": "https://github.com/cmwen/personal-kb-mcp#readme",
+  "author": "Chi-Ming Wen",
   "license": "MIT",
   "dependencies": {
     "@mcp/sdk": "^0.10.0",
