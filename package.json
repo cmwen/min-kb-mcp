@@ -1,0 +1,35 @@
+{
+  "name": "personal-kb-mcp",
+  "version": "0.1.0",
+  "description": "A simple, file-based knowledge base server (MCP) for LLMs.",
+  "main": "dist/index.js",
+  "bin": {
+    "personal-kb-mcp": "./dist/cli.js"
+  },
+  "scripts": {
+    "start": "tsx src/cli.ts",
+    "build": "tsc",
+    "test": "echo "Error: no test specified" && exit 1"
+  },
+  "keywords": [
+    "llm",
+    "mcp",
+    "knowledge-base",
+    "sqlite",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "appdata-path": "^1.0.0",
+    "better-sqlite3": "^11.1.2",
+    "commander": "^12.1.0",
+    "hono": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20.14.10",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  }
+}
