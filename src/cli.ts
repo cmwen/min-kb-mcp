@@ -55,7 +55,7 @@ program
     try {
       console.log('Creating config...')
       // Create config with transport options
-      const config = new Config(options.kb)
+      const config = new Config(options.kb, options.port ? parseInt(options.port, 10) : undefined)
       console.log('Config created:', {
         kb: options.kb,
         transport: config.transport,
@@ -65,13 +65,6 @@ program
           MCP_PORT: process.env.MCP_PORT
         }
       })
-      
-      // Override config with CLI options if provided
-      if (options.port) {
-        const port = parseInt(options.port, 10)
-        console.log(`Overriding HTTP port from ${config.httpPort} to ${port}`)
-        config.httpPort = port
-      }
       
       console.log('Initializing server...')
       server = new MCPServer(config)

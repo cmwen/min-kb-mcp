@@ -17,7 +17,7 @@ export class Config {
    * Creates a new Config instance for the specified knowledge base
    * @param kbName The name of the knowledge base
    */
-  constructor(kbName: string) {
+  constructor(kbName: string, cliHttpPort?: number) {
     if (!kbName) {
       throw new Error('Knowledge base name is required')
     }
@@ -25,7 +25,9 @@ export class Config {
     // Set transport based on environment variable
     if (process.env.MCP_TRANSPORT === 'http') {
       this.transport = 'http'
-      this.httpPort = parseInt(process.env.MCP_PORT || '3000', 10)
+      this.httpPort = cliHttpPort || parseInt(process.env.MCP_PORT || '3000', 10)
+    } else if (cliHttpPort) {
+      this.httpPort = cliHttpPort
     }
 
     // Resolve the root path for this knowledge base

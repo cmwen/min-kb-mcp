@@ -75,11 +75,14 @@ export class MCPServer {
             content: [
               { type: 'text', text: `Article created successfully.` },
               {
-                type: 'resource_link',
+                type: 'resource',
                 uri: `article://${id}`,
                 name: title || 'New Article',
-                mimeType: 'text/markdown',
-                description: `Article: ${title || id}`
+                resource: {
+                  text: content,
+                  uri: `article://${id}`,
+                  mimeType: 'text/markdown',
+                }
               }
             ]
           }
@@ -112,12 +115,16 @@ export class MCPServer {
           return {
             content: [
               { type: 'text', text: `Found ${results.length} articles:` },
+              { type: "text", text: `Found ${results.length} articles:` },
               ...results.map(result => ({
-                type: 'resource_link',
+                type: "resource" as const,
                 uri: `article://${result.id}`,
                 name: result.title || result.id,
-                mimeType: 'text/markdown',
-                description: `Relevance: ${result.rank}`
+                resource: {
+                  text: '',
+                  uri: `article://${result.id}`,
+                  mimeType: 'text/markdown',
+                }
               }))
             ]
           }
@@ -161,11 +168,14 @@ export class MCPServer {
             content: [
               { type: 'text', text: 'Article updated successfully.' },
               {
-                type: 'resource_link',
+                type: 'resource',
                 uri: `article://${id}`,
                 name: title || id,
-                mimeType: 'text/markdown',
-                description: `Updated article: ${title || id}`
+                resource: {
+                  text: content,
+                  uri: `article://${id}`,
+                  mimeType: 'text/markdown',
+                }
               }
             ]
           }
@@ -214,266 +224,130 @@ export class MCPServer {
       }
     )
 
-    // Register other tools similarly...
-  }
-
-  /**
-   * Tool to create a new article
-   * @private
-   */
-  private createArticleTool(): ExtendedTool {
-    return {
-      name: 'createArticle',
-      description: 'Creates a new article with the given content and optional keywords',
-      parameters: {
-        content: { type: 'string', description: 'The markdown content of the article' },
-        keywords: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Optional keywords for the article',
-          optional: true,
-        },
-      },
-      handler: async ({ content, keywords }) => {
-        try {
-          const { id, filePath } = await this.fileManager.createArticle(content)
-          await this.db.indexArticle({
-            id,
-            filePath,
-            content,
-            keywords: keywords?.join(','),
-          })
-          return { id, filePath }
-        } catch (error) {
-          if (error instanceof Error) {
-            throw new Error(`Failed to create article: ${error.message}`)
-          }
-          throw error
+    // Get Article Tool
+    this.server.registerTool(
+      'getArticle',
+      {
+        title: 'Get Article',
+        description: 'Retrieves an article by its ID',
+        inputSchema: {
+          id: z.string().describe('The ID of the article to retrieve')
         }
       },
-    }
-  }
-
-  /**
-   * Tool to get an article by ID
-   * @private
-   */
-  private getArticleTool(): ExtendedTool {
-    return {
-      name: 'getArticle',
-      description: 'Retrieves an article by its ID',
-      parameters: {
-        id: { type: 'string', description: 'The ID of the article to retrieve' },
-      },
-      handler: async ({ id }) => {
+      async ({ id }: { id: string }) => {
         try {
           const filePath = `${this.config.articlesPath}/${id}.md`
           const content = await this.fileManager.readArticle(filePath)
-          return { content, filePath }
-        } catch (error) {
-          if (error instanceof Error) {
-            throw new Error(`Failed to get article: ${error.message}`)
+          return {
+            content: [{
+              type: 'text',
+              text: `Article content for ID ${id}:
+${content}`
+            }]
           }
-          throw error
+        } catch (error) {
+          return {
+            content: [{
+              type: 'text',
+              text: `Failed to retrieve article: ${error instanceof Error ? error.message : 'Unknown error'}`
+            }],
+            isError: true
+          }
+        }
+      }
+    )
+
+    // Find Linked Articles Tool
+    this.server.registerTool(
+      'findLinkedArticles',
+      {
+        title: 'Find Linked Articles',
+        description: 'Finds articles that share keywords with the specified article',
+        inputSchema: {
+          id: z.string().describe('The ID of the article to find links for')
         }
       },
-    }
-  }
+      async ({ id }: { id: string }) => {
+        // This will be implemented in a future update
+        return {
+          content: [{
+            type: 'text',
+            text: `Finding linked articles for ID ${id} is not yet implemented.`
+          }]
+        }
+      }
+    )
 
-  /**
-   * Tool to update an existing article
-   * @private
-   */
-  private updateArticleTool(): ExtendedTool {
-    return {
-      name: 'updateArticle',
-      description: 'Updates an existing article',
-      parameters: {
-        id: { type: 'string', description: 'The ID of the article to update' },
-        content: { type: 'string', description: 'The new content for the article' },
-        keywords: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Optional new keywords for the article',
-          optional: true,
-        },
-      },
-      handler: async ({ id, content, keywords }) => {
-        try {
-          const filePath = `${this.config.articlesPath}/${id}.md`
-          await this.fileManager.updateArticle(filePath, content)
-          await this.db.indexArticle({
-            id,
-            filePath,
-            content,
-            keywords: keywords?.join(','),
-          })
-          return { success: true }
-        } catch (error) {
-          if (error instanceof Error) {
-            throw new Error(`Failed to update article: ${error.message}`)
-          }
-          throw error
+    // Get Articles By Time Range Tool
+    this.server.registerTool(
+      'getArticlesByTimeRange',
+      {
+        title: 'Get Articles By Time Range',
+        description: 'Retrieves articles within a specific time range',
+        inputSchema: {
+          startTime: z.string().optional().describe('Start time (ISO 8601)'),
+          endTime: z.string().optional().describe('End time (ISO 8601)'),
+          type: z.enum(['created', 'modified']).describe('Which timestamp to filter on')
         }
       },
-    }
-  }
+      async ({ startTime, endTime, type }: { startTime?: string, endTime?: string, type: 'created' | 'modified' }) => {
+        // This will be implemented in a future update
+        return {
+          content: [{
+            type: 'text',
+            text: `Retrieving articles by time range (start: ${startTime}, end: ${endTime}, type: ${type}) is not yet implemented.`
+          }]
+        }
+      }
+    )
 
-  /**
-   * Tool to delete an article
-   * @private
-   */
-  private deleteArticleTool(): ExtendedTool {
-    return {
-      name: 'deleteArticle',
-      description: 'Deletes an article by its ID',
-      parameters: {
-        id: { type: 'string', description: 'The ID of the article to delete' },
+    // List Articles Tool
+    this.server.registerTool(
+      'listArticles',
+      {
+        title: 'List Articles',
+        description: 'Lists all articles in the knowledge base',
+        inputSchema: {}
       },
-      handler: async ({ id }) => {
-        try {
-          const filePath = `${this.config.articlesPath}/${id}.md`
-          await this.fileManager.deleteArticle(filePath)
-          await this.db.deindexArticle(id)
-          return { success: true }
-        } catch (error) {
-          if (error instanceof Error) {
-            throw new Error(`Failed to delete article: ${error.message}`)
-          }
-          throw error
+      async () => {
+        // This will be implemented in a future update
+        return {
+          content: [{
+            type: 'text',
+            text: 'Listing all articles is not yet implemented.'
+          }]
+        }
+      }
+    )
+
+    // Get Article Stats Tool
+    this.server.registerTool(
+      'getArticleStats',
+      {
+        title: 'Get Article Stats',
+        description: 'Returns statistics about articles',
+        inputSchema: {
+          timeRange: z.object({
+            start: z.string().describe('Start time (ISO 8601)'),
+            end: z.string().describe('End time (ISO 8601)')
+          }).optional()
         }
       },
-    }
-  }
-
-  /**
-   * Tool to search articles
-   * @private
-   */
-  private searchArticlesTool(): ExtendedTool {
-    return {
-      name: 'searchArticles',
-      description: 'Searches articles using full-text search',
-      parameters: {
-        query: { type: 'string', description: 'The search query' },
-        timeRange: {
-          type: 'object',
-          properties: {
-            start: { type: 'string', description: 'Start time (ISO 8601)' },
-            end: { type: 'string', description: 'End time (ISO 8601)' },
-          },
-          optional: true,
-        },
-        timeField: {
-          type: 'string',
-          enum: ['created', 'modified'],
-          description: 'Which timestamp to filter on',
-          optional: true,
-        },
-      },
-      handler: async ({ query, timeRange, timeField }) => {
-        try {
-          return await this.db.search(query)
-        } catch (error) {
-          if (error instanceof Error) {
-            throw new Error(`Failed to search articles: ${error.message}`)
-          }
-          throw error
+      async ({ timeRange }: { timeRange?: { start: string, end: string } }) => {
+        // This will be implemented in a future update
+        return {
+          content: [{
+            type: 'text',
+            text: `Getting article statistics for time range ${JSON.stringify(timeRange)} is not yet implemented.`
+          }]
         }
-      },
-    }
+      }
+    )
+
+    // Register other tools similarly...
   }
 
-  /**
-   * Tool to find linked articles
-   * @private
-   */
-  private findLinkedArticlesTool(): ExtendedTool {
-    return {
-      name: 'findLinkedArticles',
-      description: 'Finds articles that share keywords with the specified article',
-      parameters: {
-        id: { type: 'string', description: 'The ID of the article to find links for' },
-      },
-      handler: async ({ id }) => {
-        // This will be implemented in a future update
-        return { links: [] }
-      },
-    }
-  }
-
-  /**
-   * Tool to get articles by time range
-   * @private
-   */
-  private getArticlesByTimeRangeTool(): ExtendedTool {
-    return {
-      name: 'getArticlesByTimeRange',
-      description: 'Retrieves articles within a specific time range',
-      parameters: {
-        startTime: {
-          type: 'string',
-          description: 'Start time (ISO 8601)',
-          optional: true,
-        },
-        endTime: {
-          type: 'string',
-          description: 'End time (ISO 8601)',
-          optional: true,
-        },
-        type: {
-          type: 'string',
-          enum: ['created', 'modified'],
-          description: 'Which timestamp to filter on',
-        },
-      },
-      handler: async ({ startTime, endTime, type }) => {
-        // This will be implemented in a future update
-        return { articles: [] }
-      },
-    }
-  }
-
-  /**
-   * Tool to list all articles
-   * @private
-   */
-  private listArticlesTool(): ExtendedTool {
-    return {
-      name: 'listArticles',
-      description: 'Lists all articles in the knowledge base',
-      parameters: {},
-      handler: async () => {
-        // This will be implemented in a future update
-        return { articles: [] }
-      },
-    }
-  }
-
-  /**
-   * Tool to get article statistics
-   * @private
-   */
-  private getArticleStatsTool(): ExtendedTool {
-    return {
-      name: 'getArticleStats',
-      description: 'Returns statistics about articles',
-      parameters: {
-        timeRange: {
-          type: 'object',
-          properties: {
-            start: { type: 'string', description: 'Start time (ISO 8601)' },
-            end: { type: 'string', description: 'End time (ISO 8601)' },
-          },
-          optional: true,
-        },
-      },
-      handler: async ({ timeRange }) => {
-        // This will be implemented in a future update
-        return { stats: {} }
-      },
-    }
-  }
+  
 
   /**
    * Sets up HTTP transport with Express
