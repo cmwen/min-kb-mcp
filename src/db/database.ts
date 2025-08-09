@@ -22,7 +22,10 @@ interface SearchResult {
  * Custom error for database operation failures
  */
 export class DatabaseError extends Error {
-  constructor(message: string, public readonly cause?: Error) {
+  constructor(
+    message: string,
+    public readonly cause?: Error
+  ) {
     super(message)
     this.name = 'DatabaseError'
   }
@@ -39,7 +42,10 @@ export class DatabaseService {
       this.db = new Database(dbPath)
       this.init()
     } catch (err) {
-      throw new DatabaseError(`Failed to initialize database: ${err instanceof Error ? err.message : String(err)}`, err as Error)
+      throw new DatabaseError(
+        `Failed to initialize database: ${err instanceof Error ? err.message : String(err)}`,
+        err as Error
+      )
     }
   }
 
@@ -90,19 +96,30 @@ export class DatabaseService {
 
       this.db.transaction(() => {
         // Insert/update the main article record
-        this.db.prepare(`
+        this.db
+          .prepare(
+            `
           INSERT OR REPLACE INTO articles (id, filePath, title, keywords)
           VALUES (?, ?, ?, ?)
-        `).run(article.id, article.filePath, title, article.keywords)
+        `
+          )
+          .run(article.id, article.filePath, title, article.keywords)
 
         // Insert/update the FTS content
-        this.db.prepare(`
+        this.db
+          .prepare(
+            `
           INSERT OR REPLACE INTO articles_fts (id, content)
           VALUES (?, ?)
-        `).run(article.id, cleanContent)
+        `
+          )
+          .run(article.id, cleanContent)
       })()
     } catch (err) {
-      throw new DatabaseError(`Failed to index article: ${err instanceof Error ? err.message : String(err)}`, err as Error)
+      throw new DatabaseError(
+        `Failed to index article: ${err instanceof Error ? err.message : String(err)}`,
+        err as Error
+      )
     }
   }
 
@@ -117,7 +134,10 @@ export class DatabaseService {
         this.db.prepare('DELETE FROM articles_fts WHERE id = ?').run(id)
       })()
     } catch (err) {
-      throw new DatabaseError(`Failed to deindex article: ${err instanceof Error ? err.message : String(err)}`, err as Error)
+      throw new DatabaseError(
+        `Failed to deindex article: ${err instanceof Error ? err.message : String(err)}`,
+        err as Error
+      )
     }
   }
 
@@ -129,7 +149,9 @@ export class DatabaseService {
    */
   async search(query: string, limit = 10): Promise<SearchResult[]> {
     try {
-      return this.db.prepare(`
+      return this.db
+        .prepare(
+          `
         SELECT
           a.id,
           a.filePath,
@@ -141,9 +163,40 @@ export class DatabaseService {
         WHERE fts.content MATCH ?
         ORDER BY fts.rank
         LIMIT ?
-      `).all(query, limit) as SearchResult[]
+      `
+        )
+        .all(query, limit) as SearchResult[]
     } catch (err) {
-      throw new DatabaseError(`Failed to search articles: ${err instanceof Error ? err.message : String(err)}`, err as Error)
+      throw new DatabaseError(
+        `Failed to search articles: ${err instanceof Error ? err.message : String(err)}`,
+        err as Error
+      )
+    }
+  }
+
+  /**
+   * Lists articles with pagination
+   * @param page The page number (1-indexed)
+   * @param size The number of items per page
+   * @returns Array of articles
+   */
+  async listArticles(page: number, size: number): Promise<Article[]> {
+    try {
+      const offset = (page - 1) * size
+      return this.db
+        .prepare(
+          `
+        SELECT id, filePath, title, keywords
+        FROM articles
+        LIMIT ? OFFSET ?
+      `
+        )
+        .all(size, offset) as Article[]
+    } catch (err) {
+      throw new DatabaseError(
+        `Failed to list articles: ${err instanceof Error ? err.message : String(err)}`,
+        err as Error
+      )
     }
   }
 

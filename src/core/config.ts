@@ -21,7 +21,7 @@ export class Config {
     if (!kbName) {
       throw new Error('Knowledge base name is required')
     }
-    
+
     // Set transport based on environment variable
     if (process.env.MCP_TRANSPORT === 'http') {
       this.transport = 'http'
@@ -32,7 +32,7 @@ export class Config {
 
     // Resolve the root path for this knowledge base
     this.kbRootPath = join(getAppdataPath('min-kb-mcp'), kbName)
-    
+
     // Derive other paths
     this.dbPath = join(this.kbRootPath, `${kbName}.sqlite`)
     this.articlesPath = join(this.kbRootPath, 'articles')

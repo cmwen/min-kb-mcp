@@ -22,7 +22,7 @@ export class MCPServer {
     this.db = new DatabaseService(config.dbPath)
     this.server = new McpServer({
       name: 'personal-kb',
-      version: '1.0.0'
+      version: '1.0.0',
     })
 
     if (config.transport === 'http') {
@@ -30,12 +30,12 @@ export class MCPServer {
       // In production, you should configure allowedHosts appropriately
       this.transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
-        enableDnsRebindingProtection: false  // Allow connections from any host in development
+        enableDnsRebindingProtection: false, // Allow connections from any host in development
       })
     } else {
       this.transport = new StdioServerTransport()
     }
-    
+
     if (config.transport === 'http') {
       this.setupHttpTransport()
     }
@@ -58,8 +58,8 @@ export class MCPServer {
         inputSchema: {
           content: z.string().describe('The markdown content of the article'),
           keywords: z.array(z.string()).optional().describe('Optional keywords for the article'),
-          title: z.string().optional().describe('Optional title for the article')
-        }
+          title: z.string().optional().describe('Optional title for the article'),
+        },
       },
       async ({ content, keywords, title }) => {
         try {
@@ -82,17 +82,19 @@ export class MCPServer {
                   text: content,
                   uri: `article://${id}`,
                   mimeType: 'text/markdown',
-                }
-              }
-            ]
+                },
+              },
+            ],
           }
         } catch (error) {
           return {
-            content: [{
-              type: 'text',
-              text: `Failed to create article: ${error instanceof Error ? error.message : 'Unknown error'}`
-            }],
-            isError: true
+            content: [
+              {
+                type: 'text',
+                text: `Failed to create article: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              },
+            ],
+            isError: true,
           }
         }
       }
@@ -106,8 +108,8 @@ export class MCPServer {
         description: 'Searches articles using full-text search',
         inputSchema: {
           query: z.string().describe('The search query'),
-          limit: z.number().optional().describe('Maximum number of results to return')
-        }
+          limit: z.number().optional().describe('Maximum number of results to return'),
+        },
       },
       async ({ query, limit = 10 }) => {
         try {
@@ -115,26 +117,28 @@ export class MCPServer {
           return {
             content: [
               { type: 'text', text: `Found ${results.length} articles:` },
-              { type: "text", text: `Found ${results.length} articles:` },
-              ...results.map(result => ({
-                type: "resource" as const,
+              { type: 'text', text: `Found ${results.length} articles:` },
+              ...results.map((result) => ({
+                type: 'resource' as const,
                 uri: `article://${result.id}`,
                 name: result.title || result.id,
                 resource: {
                   text: '',
                   uri: `article://${result.id}`,
                   mimeType: 'text/markdown',
-                }
-              }))
-            ]
+                },
+              })),
+            ],
           }
         } catch (error) {
           return {
-            content: [{
-              type: 'text',
-              text: `Failed to search articles: ${error instanceof Error ? error.message : 'Unknown error'}`
-            }],
-            isError: true
+            content: [
+              {
+                type: 'text',
+                text: `Failed to search articles: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              },
+            ],
+            isError: true,
           }
         }
       }
@@ -150,8 +154,8 @@ export class MCPServer {
           id: z.string().describe('The ID of the article to update'),
           content: z.string().describe('The new content for the article'),
           keywords: z.array(z.string()).optional().describe('Optional new keywords'),
-          title: z.string().optional().describe('Optional new title')
-        }
+          title: z.string().optional().describe('Optional new title'),
+        },
       },
       async ({ id, content, keywords, title }) => {
         try {
@@ -175,17 +179,19 @@ export class MCPServer {
                   text: content,
                   uri: `article://${id}`,
                   mimeType: 'text/markdown',
-                }
-              }
-            ]
+                },
+              },
+            ],
           }
         } catch (error) {
           return {
-            content: [{
-              type: 'text',
-              text: `Failed to update article: ${error instanceof Error ? error.message : 'Unknown error'}`
-            }],
-            isError: true
+            content: [
+              {
+                type: 'text',
+                text: `Failed to update article: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              },
+            ],
+            isError: true,
           }
         }
       }
@@ -198,8 +204,8 @@ export class MCPServer {
         title: 'Delete Article',
         description: 'Deletes an existing article',
         inputSchema: {
-          id: z.string().describe('The ID of the article to delete')
-        }
+          id: z.string().describe('The ID of the article to delete'),
+        },
       },
       async ({ id }) => {
         try {
@@ -207,18 +213,22 @@ export class MCPServer {
           await this.fileManager.deleteArticle(filePath)
           await this.db.deindexArticle(id)
           return {
-            content: [{
-              type: 'text',
-              text: `Article ${id} deleted successfully.`
-            }]
+            content: [
+              {
+                type: 'text',
+                text: `Article ${id} deleted successfully.`,
+              },
+            ],
           }
         } catch (error) {
           return {
-            content: [{
-              type: 'text',
-              text: `Failed to delete article: ${error instanceof Error ? error.message : 'Unknown error'}`
-            }],
-            isError: true
+            content: [
+              {
+                type: 'text',
+                text: `Failed to delete article: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              },
+            ],
+            isError: true,
           }
         }
       }
@@ -231,27 +241,31 @@ export class MCPServer {
         title: 'Get Article',
         description: 'Retrieves an article by its ID',
         inputSchema: {
-          id: z.string().describe('The ID of the article to retrieve')
-        }
+          id: z.string().describe('The ID of the article to retrieve'),
+        },
       },
       async ({ id }: { id: string }) => {
         try {
           const filePath = `${this.config.articlesPath}/${id}.md`
           const content = await this.fileManager.readArticle(filePath)
           return {
-            content: [{
-              type: 'text',
-              text: `Article content for ID ${id}:
-${content}`
-            }]
+            content: [
+              {
+                type: 'text',
+                text: `Article content for ID ${id}:
+${content}`,
+              },
+            ],
           }
         } catch (error) {
           return {
-            content: [{
-              type: 'text',
-              text: `Failed to retrieve article: ${error instanceof Error ? error.message : 'Unknown error'}`
-            }],
-            isError: true
+            content: [
+              {
+                type: 'text',
+                text: `Failed to retrieve article: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              },
+            ],
+            isError: true,
           }
         }
       }
@@ -264,16 +278,18 @@ ${content}`
         title: 'Find Linked Articles',
         description: 'Finds articles that share keywords with the specified article',
         inputSchema: {
-          id: z.string().describe('The ID of the article to find links for')
-        }
+          id: z.string().describe('The ID of the article to find links for'),
+        },
       },
       async ({ id }: { id: string }) => {
         // This will be implemented in a future update
         return {
-          content: [{
-            type: 'text',
-            text: `Finding linked articles for ID ${id} is not yet implemented.`
-          }]
+          content: [
+            {
+              type: 'text',
+              text: `Finding linked articles for ID ${id} is not yet implemented.`,
+            },
+          ],
         }
       }
     )
@@ -287,16 +303,26 @@ ${content}`
         inputSchema: {
           startTime: z.string().optional().describe('Start time (ISO 8601)'),
           endTime: z.string().optional().describe('End time (ISO 8601)'),
-          type: z.enum(['created', 'modified']).describe('Which timestamp to filter on')
-        }
+          type: z.enum(['created', 'modified']).describe('Which timestamp to filter on'),
+        },
       },
-      async ({ startTime, endTime, type }: { startTime?: string, endTime?: string, type: 'created' | 'modified' }) => {
+      async ({
+        startTime,
+        endTime,
+        type,
+      }: {
+        startTime?: string
+        endTime?: string
+        type: 'created' | 'modified'
+      }) => {
         // This will be implemented in a future update
         return {
-          content: [{
-            type: 'text',
-            text: `Retrieving articles by time range (start: ${startTime}, end: ${endTime}, type: ${type}) is not yet implemented.`
-          }]
+          content: [
+            {
+              type: 'text',
+              text: `Retrieving articles by time range (start: ${startTime}, end: ${endTime}, type: ${type}) is not yet implemented.`,
+            },
+          ],
         }
       }
     )
@@ -307,15 +333,40 @@ ${content}`
       {
         title: 'List Articles',
         description: 'Lists all articles in the knowledge base',
-        inputSchema: {}
+        inputSchema: {
+          page: z.number().int().positive().default(1).describe('The page number (1-indexed)'),
+          size: z.number().int().positive().default(10).describe('The number of items per page'),
+        },
       },
-      async () => {
-        // This will be implemented in a future update
-        return {
-          content: [{
-            type: 'text',
-            text: 'Listing all articles is not yet implemented.'
-          }]
+      async ({ page, size }: { page: number; size: number }) => {
+        try {
+          const articles = await this.db.listArticles(page, size)
+          if (articles.length === 0) {
+            return {
+              content: [{ type: 'text', text: `No articles found on page ${page}.` }],
+            }
+          }
+          const articleList = articles
+            .map(
+              (article) =>
+                `- ID: ${article.id}, Title: ${article.title || 'N/A'}, Keywords: ${article.keywords || 'N/A'}`,
+            )
+            .join('\n')
+          return {
+            content: [
+              { type: 'text', text: `Articles on page ${page}:\n${articleList}` },
+            ],
+          }
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Failed to list articles: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              },
+            ],
+            isError: true,
+          }
         }
       }
     )
@@ -327,27 +378,29 @@ ${content}`
         title: 'Get Article Stats',
         description: 'Returns statistics about articles',
         inputSchema: {
-          timeRange: z.object({
-            start: z.string().describe('Start time (ISO 8601)'),
-            end: z.string().describe('End time (ISO 8601)')
-          }).optional()
-        }
+          timeRange: z
+            .object({
+              start: z.string().describe('Start time (ISO 8601)'),
+              end: z.string().describe('End time (ISO 8601)'),
+            })
+            .optional(),
+        },
       },
-      async ({ timeRange }: { timeRange?: { start: string, end: string } }) => {
+      async ({ timeRange }: { timeRange?: { start: string; end: string } }) => {
         // This will be implemented in a future update
         return {
-          content: [{
-            type: 'text',
-            text: `Getting article statistics for time range ${JSON.stringify(timeRange)} is not yet implemented.`
-          }]
+          content: [
+            {
+              type: 'text',
+              text: `Getting article statistics for time range ${JSON.stringify(timeRange)} is not yet implemented.`,
+            },
+          ],
         }
       }
     )
 
     // Register other tools similarly...
   }
-
-  
 
   /**
    * Sets up HTTP transport with Express
@@ -356,23 +409,25 @@ ${content}`
   private setupHttpTransport(): void {
     this.app = express()
     this.app.use(express.json())
-    
+
     // Configure CORS
-    this.app.use(cors({
-      origin: '*',  // Configure appropriately for production
-      exposedHeaders: ['Mcp-Session-Id'],
-      allowedHeaders: ['Content-Type', 'mcp-session-id'],
-    }))
+    this.app.use(
+      cors({
+        origin: '*', // Configure appropriately for production
+        exposedHeaders: ['Mcp-Session-Id'],
+        allowedHeaders: ['Content-Type', 'mcp-session-id'],
+      })
+    )
 
     this.app.post('/mcp', async (req, res) => {
       const sessionId = req.headers['mcp-session-id'] as string | undefined
-      
+
       if (sessionId && this.transports[sessionId]) {
         await this.transports[sessionId].handleRequest(req, res, req.body)
       } else {
         const transport = this.transport as StreamableHTTPServerTransport
         await transport.handleRequest(req, res, req.body)
-        
+
         if (transport.sessionId) {
           this.transports[transport.sessionId] = transport
         }
@@ -401,7 +456,7 @@ ${content}`
       res.status(400).send('Invalid or missing session ID')
       return
     }
-    
+
     const transport = this.transports[sessionId]
     await transport.handleRequest(req, res)
   }
@@ -416,21 +471,25 @@ ${content}`
       new ResourceTemplate('article://{id}', { list: undefined }),
       {
         title: 'Article Resource',
-        description: 'Access to individual articles in the knowledge base'
+        description: 'Access to individual articles in the knowledge base',
       },
       async (uri, { id }) => {
         try {
           const filePath = `${this.config.articlesPath}/${id}.md`
           const content = await this.fileManager.readArticle(filePath)
           return {
-            contents: [{
-              uri: uri.href,
-              text: content,
-              mimeType: 'text/markdown'
-            }]
+            contents: [
+              {
+                uri: uri.href,
+                text: content,
+                mimeType: 'text/markdown',
+              },
+            ],
           }
         } catch (error) {
-          throw new Error(`Article not found: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          throw new Error(
+            `Article not found: ${error instanceof Error ? error.message : 'Unknown error'}`
+          )
         }
       }
     )
@@ -453,12 +512,12 @@ ${content}`
    */
   async stop(): Promise<void> {
     this.db.close()
-    
+
     if (this.config.transport === 'stdio') {
       (this.transport as StdioServerTransport).close()
     } else {
       // Close all HTTP transports
-      Object.values(this.transports).forEach(t => t.close())
+      Object.values(this.transports).forEach((t) => t.close())
     }
   }
 }

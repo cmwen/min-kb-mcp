@@ -19,15 +19,12 @@ process.on('unhandledRejection', (reason, promise) => {
 console.log('Starting CLI with environment:', {
   NODE_ENV: process.env.NODE_ENV,
   MCP_TRANSPORT: process.env.MCP_TRANSPORT,
-  MCP_PORT: process.env.MCP_PORT
+  MCP_PORT: process.env.MCP_PORT,
 })
 
 const program = new Command()
 
-program
-  .name('personal-kb-mcp')
-  .description('Personal Knowledge Base MCP Server')
-  .version('0.1.0')
+program.name('personal-kb-mcp').description('Personal Knowledge Base MCP Server').version('0.1.0')
 
 program
   .command('start')
@@ -62,22 +59,25 @@ program
         httpPort: config.httpPort,
         env: {
           MCP_TRANSPORT: process.env.MCP_TRANSPORT,
-          MCP_PORT: process.env.MCP_PORT
-        }
+          MCP_PORT: process.env.MCP_PORT,
+        },
       })
-      
+
       console.log('Initializing server...')
       server = new MCPServer(config)
       console.log('Starting server...')
       await server.start()
-      
+
       console.log(`MCP server started for knowledge base: ${options.kb}`)
       if (process.env.MCP_TRANSPORT === 'http') {
         console.log(`HTTP transport listening on port ${config.httpPort}`)
       }
       console.log('Server startup completed successfully')
     } catch (error) {
-      console.error('Failed to start server:', error instanceof Error ? error.message : String(error))
+      console.error(
+        'Failed to start server:',
+        error instanceof Error ? error.message : String(error)
+      )
       if (error instanceof Error && error.stack) {
         console.error('Stack trace:', error.stack)
       }
@@ -86,7 +86,7 @@ program
   })
 
 // Since we use async actions, we need to use parseAsync
-program.parseAsync().catch(error => {
+program.parseAsync().catch((error) => {
   console.error('Failed to parse CLI:', error)
   process.exit(1)
 })

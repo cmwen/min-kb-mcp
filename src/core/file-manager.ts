@@ -7,7 +7,10 @@ import { Config } from './config'
  * Custom error for file operation failures
  */
 export class FileOperationError extends Error {
-  constructor(message: string, public readonly cause?: Error) {
+  constructor(
+    message: string,
+    public readonly cause?: Error
+  ) {
     super(message)
     this.name = 'FileOperationError'
   }
@@ -32,7 +35,10 @@ export class FileManager {
       await writeFile(filePath, content, 'utf-8')
       return { id, filePath }
     } catch (err) {
-      throw new FileOperationError(`Failed to create article: ${err instanceof Error ? err.message : String(err)}`, err as Error)
+      throw new FileOperationError(
+        `Failed to create article: ${err instanceof Error ? err.message : String(err)}`,
+        err as Error
+      )
     }
   }
 
@@ -45,7 +51,10 @@ export class FileManager {
     try {
       return await readFile(filePath, 'utf-8')
     } catch (err) {
-      throw new FileOperationError(`Failed to read article: ${err instanceof Error ? err.message : String(err)}`, err as Error)
+      throw new FileOperationError(
+        `Failed to read article: ${err instanceof Error ? err.message : String(err)}`,
+        err as Error
+      )
     }
   }
 
@@ -58,7 +67,10 @@ export class FileManager {
     try {
       await writeFile(filePath, newContent, 'utf-8')
     } catch (err) {
-      throw new FileOperationError(`Failed to update article: ${err instanceof Error ? err.message : String(err)}`, err as Error)
+      throw new FileOperationError(
+        `Failed to update article: ${err instanceof Error ? err.message : String(err)}`,
+        err as Error
+      )
     }
   }
 
@@ -70,7 +82,10 @@ export class FileManager {
     try {
       await unlink(filePath)
     } catch (err) {
-      throw new FileOperationError(`Failed to delete article: ${err instanceof Error ? err.message : String(err)}`, err as Error)
+      throw new FileOperationError(
+        `Failed to delete article: ${err instanceof Error ? err.message : String(err)}`,
+        err as Error
+      )
     }
   }
 }
