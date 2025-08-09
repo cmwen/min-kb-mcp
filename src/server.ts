@@ -512,7 +512,8 @@ ${content}`,
     this.db.close()
 
     if (this.config.transport === 'stdio') {
-      ;(this.transport as StdioServerTransport).close()
+      const transport = this.transport as StdioServerTransport
+      transport.close()
     } else {
       // Close all HTTP transports
       Object.values(this.transports).forEach((t) => t.close())
