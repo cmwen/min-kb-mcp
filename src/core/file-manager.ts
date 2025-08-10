@@ -1,5 +1,5 @@
+import { readFile, unlink, writeFile } from 'fs/promises'
 import { join } from 'path'
-import { readFile, writeFile, unlink } from 'fs/promises'
 import { v4 as uuidv4 } from 'uuid'
 import { Config } from './config'
 

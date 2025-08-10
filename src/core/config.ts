@@ -1,6 +1,6 @@
-import { join } from 'path'
-import { mkdirSync } from 'fs'
 import getAppdataPath from 'appdata-path'
+import { mkdirSync } from 'fs'
+import { join } from 'path'
 
 /**
  * Configuration manager for the Personal Knowledge Base

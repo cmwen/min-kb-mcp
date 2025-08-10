@@ -1,6 +1,6 @@
+import type { Database as DatabaseType } from 'better-sqlite3'
 import Database from 'better-sqlite3'
 import removeMarkdown from 'remove-markdown'
-import type { Database as DatabaseType } from 'better-sqlite3'
 
 interface Article {
   id: string

@@ -16,28 +16,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run linting
-        run: npm run lint
+        run: pnpm run lint
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Run format check
         run: |
-          npm run format
-          git diff --exit-code || (echo "Code formatting issues found. Run 'npm run format' locally and commit changes." && exit 1)
+          pnpm run format
+          git diff --exit-code || (echo "Code formatting issues found. Run 'pnpm run format' locally and commit changes." && exit 1)
 
       - name: Run tests
-        run: npm test
+        run: pnpm test
         continue-on-error: true # Since tests are not implemented yet
 
       - name: Cache build artifacts
@@ -46,6 +51,7 @@ jobs:
           path: |
             dist
             node_modules
-          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ github.sha }}
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ matrix.node-version }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-node-${{ matrix.node-version }}-
+            ${{ runner.os }}-pnpm-${{ matrix.node-version }}-
