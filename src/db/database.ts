@@ -1,6 +1,7 @@
-import type { Database as DatabaseType } from 'better-sqlite3'
-import Database from 'better-sqlite3'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { createRequire } from 'module'
 import removeMarkdown from 'remove-markdown'
+import initSqlJs, { Database as SqlJsDatabase, SqlJsStatic } from 'sql.js'
 
 interface Article {
   id: string
@@ -35,12 +36,33 @@ export class DatabaseError extends Error {
  * Manages all database operations for the knowledge base
  */
 export class DatabaseService {
-  private db: DatabaseType
+  private db!: SqlJsDatabase
+  private SQL!: SqlJsStatic
+  private ready: Promise<void>
+  private ftsAvailable = false
+  private dbPath: string
 
   constructor(dbPath: string) {
+    this.dbPath = dbPath
+    this.ready = this.initialize(dbPath)
+  }
+
+  private async initialize(dbPath: string): Promise<void> {
     try {
-      this.db = new Database(dbPath)
-      this.init()
+      const require = createRequire(__filename)
+      const locateFile = (file: string) => require.resolve(`sql.js/dist/${file}`)
+      this.SQL = await initSqlJs({ locateFile })
+
+      if (existsSync(dbPath)) {
+        const fileBuffer = readFileSync(dbPath)
+        this.db = new this.SQL.Database(fileBuffer)
+      } else {
+        this.db = new this.SQL.Database()
+      }
+
+      this.initSchema()
+      // Attempt to persist right away to ensure file exists
+      this.persist(dbPath)
     } catch (err) {
       throw new DatabaseError(
         `Failed to initialize database: ${err instanceof Error ? err.message : String(err)}`,
@@ -50,30 +72,59 @@ export class DatabaseService {
   }
 
   /**
-   * Initializes the database schema
+   * Initializes the database schema and detects FTS5 support
    * @private
    */
-  private init(): void {
-    this.db.transaction(() => {
-      // Create the main articles table
-      this.db.exec(`
-        CREATE TABLE IF NOT EXISTS articles (
-          id TEXT PRIMARY KEY,
-          filePath TEXT NOT NULL,
-          title TEXT,
-          keywords TEXT
-        )
-      `)
+  private initSchema(): void {
+    // Create the main articles table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS articles (
+        id TEXT PRIMARY KEY,
+        filePath TEXT NOT NULL,
+        title TEXT,
+        keywords TEXT
+      );
+    `)
 
-      // Create the FTS table for content searching
+    // Content table for fallback search or to keep content accessible
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS articles_content (
+        id TEXT PRIMARY KEY,
+        content TEXT NOT NULL
+      );
+    `)
+
+    // Try to create FTS5 table with porter tokenizer; fall back progressively
+    this.ftsAvailable = false
+    try {
       this.db.exec(`
         CREATE VIRTUAL TABLE IF NOT EXISTS articles_fts USING fts5(
           id UNINDEXED,
           content,
-          tokenize = 'porter'
-        )
+          tokenize='porter'
+        );
       `)
-    })()
+      this.ftsAvailable = true
+    } catch (_) {
+      try {
+        // Try without porter tokenizer
+        this.db.exec(`
+          CREATE VIRTUAL TABLE IF NOT EXISTS articles_fts USING fts5(
+            id UNINDEXED,
+            content
+          );
+        `)
+        this.ftsAvailable = true
+      } catch {
+        // FTS5 not available in this build
+        this.ftsAvailable = false
+      }
+    }
+  }
+
+  private persist(dbPath: string): void {
+    const data = this.db.export()
+    writeFileSync(dbPath, Buffer.from(data))
   }
 
   /**
@@ -90,31 +141,41 @@ export class DatabaseService {
    * @param article The article to index
    */
   async indexArticle(article: Article): Promise<void> {
+    await this.ready
     try {
       const title = article.title || this.extractTitle(article.content)
       const cleanContent = removeMarkdown(article.content)
 
-      this.db.transaction(() => {
-        // Insert/update the main article record
-        this.db
-          .prepare(
-            `
-          INSERT OR REPLACE INTO articles (id, filePath, title, keywords)
-          VALUES (?, ?, ?, ?)
-        `
-          )
-          .run(article.id, article.filePath, title, article.keywords)
+      // Upsert core tables
+      this.db.run(
+        `INSERT INTO articles (id, filePath, title, keywords)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET filePath=excluded.filePath, title=excluded.title, keywords=excluded.keywords;`,
+        [article.id, article.filePath, title ?? null, article.keywords ?? null]
+      )
 
-        // Insert/update the FTS content
-        this.db
-          .prepare(
-            `
-          INSERT OR REPLACE INTO articles_fts (id, content)
-          VALUES (?, ?)
-        `
-          )
-          .run(article.id, cleanContent)
-      })()
+      this.db.run(
+        `INSERT INTO articles_content (id, content)
+         VALUES (?, ?)
+         ON CONFLICT(id) DO UPDATE SET content=excluded.content;`,
+        [article.id, cleanContent]
+      )
+
+      // Update FTS if available
+      if (this.ftsAvailable) {
+        try {
+          // Simple delete + insert to emulate upsert
+          this.db.run('DELETE FROM articles_fts WHERE id = ?', [article.id])
+          this.db.run('INSERT INTO articles_fts (id, content) VALUES (?, ?)', [
+            article.id,
+            cleanContent,
+          ])
+        } catch {
+          // Ignore FTS errors; keep core tables consistent
+        }
+      }
+      // Persist changes to disk
+      this.persist(this.dbPath)
     } catch (err) {
       throw new DatabaseError(
         `Failed to index article: ${err instanceof Error ? err.message : String(err)}`,
@@ -128,12 +189,22 @@ export class DatabaseService {
    * @param id The ID of the article to remove
    */
   async deindexArticle(id: string): Promise<void> {
+    await this.ready
     try {
-      this.db.transaction(() => {
-        this.db.prepare('DELETE FROM articles WHERE id = ?').run(id)
-        this.db.prepare('DELETE FROM articles_fts WHERE id = ?').run(id)
-      })()
+      this.db.exec('BEGIN')
+      this.db.run('DELETE FROM articles WHERE id = ?', [id])
+      this.db.run('DELETE FROM articles_content WHERE id = ?', [id])
+      if (this.ftsAvailable) {
+        try {
+          this.db.run('DELETE FROM articles_fts WHERE id = ?', [id])
+        } catch {
+          // ignore
+        }
+      }
+      this.db.exec('COMMIT')
+      this.persist(this.dbPath)
     } catch (err) {
+      this.db.exec('ROLLBACK')
       throw new DatabaseError(
         `Failed to deindex article: ${err instanceof Error ? err.message : String(err)}`,
         err as Error
@@ -148,24 +219,98 @@ export class DatabaseService {
    * @returns Array of search results
    */
   async search(query: string, limit = 10): Promise<SearchResult[]> {
+    await this.ready
     try {
-      return this.db
-        .prepare(
-          `
-        SELECT
-          a.id,
-          a.filePath,
-          a.title,
-          a.keywords,
-          fts.rank
-        FROM articles_fts fts
-        JOIN articles a ON fts.id = a.id
-        WHERE fts.content MATCH ?
-        ORDER BY fts.rank
-        LIMIT ?
-      `
-        )
-        .all(query, limit) as SearchResult[]
+      if (this.ftsAvailable) {
+        // Try using bm25 ranking if available
+        try {
+          const stmt = this.db.prepare(`
+            SELECT a.id, a.filePath, a.title, a.keywords, bm25(articles_fts) AS rank
+            FROM articles_fts
+            JOIN articles a ON articles_fts.id = a.id
+            WHERE articles_fts MATCH ?
+            ORDER BY rank
+            LIMIT ?;
+          `)
+          const results: SearchResult[] = []
+          stmt.bind([query, limit])
+          while (stmt.step()) {
+            const row = stmt.getAsObject() as {
+              id?: unknown
+              filePath?: unknown
+              title?: unknown
+              keywords?: unknown
+              rank?: unknown
+            }
+            results.push({
+              id: String(row.id ?? ''),
+              filePath: String(row.filePath ?? ''),
+              title: (row.title as string | null) ?? null,
+              keywords: (row.keywords as string | null) ?? null,
+              rank: typeof row.rank === 'number' ? (row.rank as number) : 0,
+            })
+          }
+          stmt.free()
+          return results
+        } catch {
+          // Fallback without bm25 ordering
+          const stmt = this.db.prepare(`
+            SELECT a.id, a.filePath, a.title, a.keywords, 0 AS rank
+            FROM articles_fts
+            JOIN articles a ON articles_fts.id = a.id
+            WHERE articles_fts MATCH ?
+            LIMIT ?;
+          `)
+          const results: SearchResult[] = []
+          stmt.bind([query, limit])
+          while (stmt.step()) {
+            const row = stmt.getAsObject() as {
+              id?: unknown
+              filePath?: unknown
+              title?: unknown
+              keywords?: unknown
+            }
+            results.push({
+              id: String(row.id ?? ''),
+              filePath: String(row.filePath ?? ''),
+              title: (row.title as string | null) ?? null,
+              keywords: (row.keywords as string | null) ?? null,
+              rank: 0,
+            })
+          }
+          stmt.free()
+          return results
+        }
+      }
+
+      // Fallback: naive LIKE search on content table
+      const like = `%${query}%`
+      const stmt = this.db.prepare(`
+        SELECT a.id, a.filePath, a.title, a.keywords, 0 AS rank
+        FROM articles_content c
+        JOIN articles a ON c.id = a.id
+        WHERE c.content LIKE ?
+        LIMIT ?;
+      `)
+      const results: SearchResult[] = []
+      stmt.bind([like, limit])
+      while (stmt.step()) {
+        const row = stmt.getAsObject() as {
+          id?: unknown
+          filePath?: unknown
+          title?: unknown
+          keywords?: unknown
+        }
+        results.push({
+          id: String(row.id ?? ''),
+          filePath: String(row.filePath ?? ''),
+          title: (row.title as string | null) ?? null,
+          keywords: (row.keywords as string | null) ?? null,
+          rank: 0,
+        })
+      }
+      stmt.free()
+      return results
     } catch (err) {
       throw new DatabaseError(
         `Failed to search articles: ${err instanceof Error ? err.message : String(err)}`,
@@ -181,17 +326,31 @@ export class DatabaseService {
    * @returns Array of articles
    */
   async listArticles(page: number, size: number): Promise<Article[]> {
+    await this.ready
     try {
       const offset = (page - 1) * size
-      return this.db
-        .prepare(
-          `
-        SELECT id, filePath, title, keywords
-        FROM articles
-        LIMIT ? OFFSET ?
-      `
-        )
-        .all(size, offset) as Article[]
+      const stmt = this.db.prepare(
+        'SELECT id, filePath, title, keywords FROM articles LIMIT ? OFFSET ?;'
+      )
+      const results: Article[] = []
+      stmt.bind([size, offset])
+      while (stmt.step()) {
+        const row = stmt.getAsObject() as {
+          id?: unknown
+          filePath?: unknown
+          title?: unknown
+          keywords?: unknown
+        }
+        results.push({
+          id: String(row.id ?? ''),
+          filePath: String(row.filePath ?? ''),
+          title: (row.title as string | undefined) ?? undefined,
+          keywords: (row.keywords as string | undefined) ?? undefined,
+          content: '',
+        })
+      }
+      stmt.free()
+      return results
     } catch (err) {
       throw new DatabaseError(
         `Failed to list articles: ${err instanceof Error ? err.message : String(err)}`,
@@ -204,6 +363,13 @@ export class DatabaseService {
    * Closes the database connection
    */
   close(): void {
-    this.db.close()
+    if (this.db) {
+      try {
+        this.persist(this.dbPath)
+      } catch {
+        // ignore persist errors on close
+      }
+      this.db.close()
+    }
   }
 }
