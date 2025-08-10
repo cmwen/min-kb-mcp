@@ -46,6 +46,11 @@
   "homepage": "https://github.com/cmwen/min-kb-mcp#readme",
   "author": "Chi-Ming Wen",
   "license": "MIT",
+  "packageManager": "pnpm@10.14.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.2",
     "appdata-path": "^1.0.0",
