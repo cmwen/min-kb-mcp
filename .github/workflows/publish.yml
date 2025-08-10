@@ -21,9 +21,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@cmwen'
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org/'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -32,14 +31,7 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Configure GitHub Package Registry
-        run: |
-          echo "@cmwen:registry=https://npm.pkg.github.com" > .npmrc
-          echo "//npm.pkg.github.com/:_authToken=\${NODE_AUTH_TOKEN}" >> .npmrc
+      - name: Publish to npm
+        run: pnpm publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish to GitHub Packages
-        run: pnpm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
