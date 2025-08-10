@@ -139,6 +139,20 @@
 				}
 			}
 		}
+		,
+		{
+			"includes": ["src/cli.ts", "src/server.ts"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noConsole": {
+							"level": "off",
+							"options": { "allow": ["warn", "error"] }
+						}
+					}
+				}
+			}
+		}
 	],
 	"assist": {
 		"enabled": true,
