@@ -17,15 +17,8 @@ A minimalist, file-based knowledge base server designed to be operated programma
 
 ## Installation
 
-Zero native deps (no compilers, no SDKs). To install from GitHub Packages, authenticate first:
 
-```bash
-# Create or edit ~/.npmrc
-echo "@cmwen:registry=https://npm.pkg.github.com" >> ~/.npmrc
-# You'll need a GitHub personal access token with `read:packages` scope
-```
-
-Then install the package:
+Zero native deps (no compilers, no SDKs). To install from npm:
 
 ```bash
 pnpm add @cmwen/min-kb-mcp
@@ -36,6 +29,38 @@ Or run directly with:
 ```bash
 npx @cmwen/min-kb-mcp start --kb my-notes
 ```
+
+## Publishing to npm
+
+To publish a new version:
+
+1. Bump the version in `package.json`.
+2. Commit and push your changes.
+3. Create a new tag (e.g. `v1.2.3`) and push it:
+   ```bash
+   git tag v1.2.3
+   git push origin v1.2.3
+   ```
+4. The GitHub Actions workflow will automatically build and publish to npm if you have set the `NPM_TOKEN` secret in your repository.
+
+### Setting up your npm token
+
+1. Get your npm token by running:
+   ```bash
+   npm token create
+   ```
+2. Add it to your GitHub repository secrets as `NPM_TOKEN`.
+
+### Manual publish (local)
+
+If you want to publish manually:
+
+```bash
+pnpm run build
+pnpm publish --access public
+```
+
+Make sure your npm user has access to the `@cmwen` scope.
 
 ## Quick Start
 
