@@ -40,6 +40,9 @@ jobs:
           echo "Version: $(node -p "require('./package.json').version")"
 
       - name: Publish to npm
-        run: pnpm publish --access public
+        # CI checkouts of tags often leave Git in a detached HEAD state;
+        # pnpm's default git-checks will fail if publish-branch is set.
+        # Use --no-git-checks when publishing from a tag in CI.
+        run: pnpm publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
