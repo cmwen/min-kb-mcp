@@ -1,7 +1,7 @@
 # Minimalist Knowledge Base MCP
 
 [![CI](https://github.com/cmwen/min-kb-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/cmwen/min-kb-mcp/actions/workflows/ci.yml)
-[![npm version](https://badge.fury.io/js/min-kb-mcp.svg)](https://badge.fury.io/js/min-kb-mcp)
+[![npm version](https://badge.fury.io/js/@cmwen/min-kb-mcp.svg)](https://badge.fury.io/js/@cmwen/min-kb-mcp)
 
 A minimalist, file-based knowledge base server designed to be operated programmatically by Large Language Models (LLMs) and developers. It functions as a headless MCP (Model Context Protocol) server, exposing a suite of tools for managing knowledge.
 
@@ -41,7 +41,7 @@ To publish a new version:
    git tag v1.2.3
    git push origin v1.2.3
    ```
-4. The GitHub Actions workflow will automatically build and publish to npm if you have set the `NPM_TOKEN` secret in your repository.
+4. The GitHub Actions workflow will automatically build and publish to npm if you have set the `NPM_TOKEN` secret in your repository. For scoped packages (`@cmwen/*`) the publish command uses `--access public` so your npm user must have permission to publish under the `@cmwen` scope.
 
 ### Setting up your npm token
 

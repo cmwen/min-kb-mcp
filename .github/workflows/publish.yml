@@ -1,6 +1,9 @@
 name: Publish Package
 
 on:
+  push:
+    tags:
+      - 'v*.*.*'
   release:
     types: [created]
 
@@ -30,6 +33,11 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+      - name: Verify package info
+        run: |
+          echo "Package: $(node -p "require('./package.json').name")"
+          echo "Version: $(node -p "require('./package.json').version")"
 
       - name: Publish to npm
         run: pnpm publish --access public

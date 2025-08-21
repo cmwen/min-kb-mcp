@@ -1,13 +1,13 @@
 {
   "name": "@cmwen/min-kb-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A minimalist, file-based knowledge base server (MCP) for LLMs.",
   "main": "dist/index.js",
   "bin": {
     "min-kb-mcp": "./dist/cli.js"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org/"
   },
   "files": [
     "dist",
@@ -66,7 +66,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.1.4",
     "@commitlint/cli": "^19.8.1",
-    "@commitlint/config-conventional": "^19.8.1",
+  "@commitlint/config-conventional": "^19.8.1",
   "@types/node": "^20.14.10",
   "vitest": "^2.0.5",
     "@types/cors": "^2.8.19",
@@ -77,6 +77,6 @@
     "husky": "^9.1.7",
     "ts-node": "^10.9.2",
     "tsx": "^4.16.2",
-    "typescript": "^5.5.3"
+  "typescript": "^5.5.3"
   }
 }
