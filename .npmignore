@@ -1,0 +1,48 @@
+# Source files
+src/
+*.ts
+!*.d.ts
+
+# Development files
+tsconfig.json
+vitest.config.ts
+biome.json
+commitlint.config.js
+.github/
+.husky/
+.pnpmrc
+pnpm-workspace.yaml
+
+# Test files
+**/*.spec.ts
+**/*.test.ts
+coverage/
+
+# Development dependencies
+node_modules/
+
+# Environment and logs
+.env
+.env.local
+*.log
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Git files
+.git/
+.gitignore
+
+# Temporary files
+*.tgz
+dev-kb/
+
+# Documentation (keep README, LICENSE, CHANGELOG)
+docs/
+CONTRIBUTING.md
+.github/copilot-instructions.md
+LLM.txt

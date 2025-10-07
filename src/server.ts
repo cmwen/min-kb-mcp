@@ -21,8 +21,8 @@ export class MCPServer {
     this.fileManager = new FileManager(config)
     this.db = new DatabaseService(config.dbPath)
     this.server = new McpServer({
-      name: 'personal-kb',
-      version: '1.0.0',
+      name: 'min-kb-mcp',
+      version: '0.2.2',
     })
 
     if (config.transport === 'http') {
@@ -116,7 +116,6 @@ export class MCPServer {
           const results = await this.db.search(query, limit)
           return {
             content: [
-              { type: 'text', text: `Found ${results.length} articles:` },
               { type: 'text', text: `Found ${results.length} articles:` },
               ...results.map((result) => ({
                 type: 'resource' as const,
