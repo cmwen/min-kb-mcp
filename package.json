@@ -60,7 +60,7 @@
     "commander": "^12.1.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "remove-markdown": "^0.5.0",
+    "remove-markdown": "^0.6.2",
     "uuid": "^10.0.0",
     "zod": "^3.22.4"
   },
