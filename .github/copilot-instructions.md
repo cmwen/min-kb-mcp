@@ -33,7 +33,7 @@ Developer workflows
 - Run (HTTP dev): MCP_TRANSPORT=http MCP_PORT=9876 pnpm run dev, then connect MCP Inspector to http://localhost:9876/mcp
 
 Conventions & gotchas
-- TypeScript strict mode; Node ≥18. Errors use FileOperationError/DatabaseError. Avoid leaking low-level errors in tool responses; use isError with succinct text.
+- TypeScript strict mode; Node ≥22. Errors use FileOperationError/DatabaseError. Avoid leaking low-level errors in tool responses; use isError with succinct text.
 - IDs are UUIDs; filenames are <id>.md; title is derived from first H1 if not provided (DatabaseService.extractTitle).
 - sql.js FTS5 support may be absent in some WASM builds; code transparently falls back to LIKE. Ranking may be 0 and order less meaningful in fallback.
 - Publishing targets GitHub Packages (publishConfig.registry). prepublishOnly runs build; CLI bin is dist/cli.js.

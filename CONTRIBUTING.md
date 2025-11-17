@@ -10,7 +10,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ### Prerequisites
 
-- Node.js 18 or higher
+- Node.js 22 or higher
 - pnpm 9.0.0 or higher
 
 ### Setup
