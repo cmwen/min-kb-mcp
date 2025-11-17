@@ -1,0 +1,51 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      # Group all @types/* packages together
+      types:
+        patterns:
+          - "@types/*"
+      # Group commitlint packages together
+      commitlint:
+        patterns:
+          - "@commitlint/*"
+      # Group biome ecosystem packages
+      biome:
+        patterns:
+          - "@biomejs/*"
+      # Group MCP SDK packages
+      mcp:
+        patterns:
+          - "@modelcontextprotocol/*"
+      # Group development tools
+      dev-tools:
+        patterns:
+          - "ts-node"
+          - "tsx"
+          - "typescript"
+          - "vitest"
+          - "husky"
+          - "cross-env"
+      # Group testing utilities
+      testing:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+    # Open pull requests for security updates
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      # Group GitHub Actions together
+      actions:
+        patterns:
+          - "*"

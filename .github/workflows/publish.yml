@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +43,5 @@ jobs:
         # CI checkouts of tags often leave Git in a detached HEAD state;
         # pnpm's default git-checks will fail if publish-branch is set.
         # Use --no-git-checks when publishing from a tag in CI.
-        run: pnpm publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # Using npm provenance for OIDC authentication
+        run: pnpm publish --access public --no-git-checks --provenance
